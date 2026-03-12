@@ -52,21 +52,23 @@ int read_process_stats(pid_t pid, unsigned long *utime,
     name[name_len_actual] = '\0';
     
     // Parse fields after the closing parenthesis
-    char *p = close_paren + 2;  // Skip ') '
-    unsigned long val;
-    int field = 1;
-    
+    char *p = close_paren + 2;
+
+    // Skip state field
+    while (*p && *p != ' ')
+        p++;
+    p++;
+
+    int field = 3;  // because we already skipped fields 1 and 2
+
     while (*p) {
         char *end;
-        while (*p == ' ') p++;
-        val = strtoul(p, &end, 10);
+        unsigned long val = strtoul(p, &end, 10);
         if (p == end) break;
-        
-        // Field 14 is utime (1-indexed)
+
         if (field == 14) *utime = val;
-        // Field 15 is stime
         if (field == 15) *stime = val;
-        
+
         p = end;
         field++;
     }

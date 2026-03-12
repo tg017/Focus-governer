@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 int main() {
-    unsigned long utime, stime;
+    unsigned long utime, stime; 
     char name[256];
     
     // Test reading current process's stats
