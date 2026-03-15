@@ -7,6 +7,14 @@
 #define MAX_NAME_LEN 256
 #define HISTORY_SIZE 3
 
+typedef enum {
+    STATE_NORMAL = 0,
+    STATE_THROTTLED,
+    STATE_HARD_THROTTLED,
+    STATE_FROZEN
+} process_state_t;
+
+
 typedef struct {
     pid_t pid;
     char name[MAX_NAME_LEN];
@@ -20,7 +28,8 @@ typedef struct {
     
     // Process state
     int foreground;        // 1 if foreground, 0 if background
-    int state;             // Will be used later
+    process_state_t state;
+    int violation_count;
     
     // Timestamps
     time_t first_seen;

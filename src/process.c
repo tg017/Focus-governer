@@ -46,7 +46,8 @@ void add_process(process_list_t *list, pid_t pid, const char *name) {
     p->last_utime = 0;
     p->last_stime = 0;
     p->foreground = 0;
-    p->state = 0;
+    p->state = STATE_NORMAL;
+    p->violation_count = 0;
     
     for (int i = 0; i < HISTORY_SIZE; i++) {
         p->history[i] = 0.0;
@@ -76,15 +77,31 @@ process_t* find_process(process_list_t *list, pid_t pid) {
     return NULL;
 }
 
+const char* state_str(process_state_t s) {
+
+    switch(s) {
+        case STATE_NORMAL: return "NORMAL";
+        case STATE_THROTTLED: return "THROTTLED";
+        case STATE_HARD_THROTTLED: return "HARD";
+        case STATE_FROZEN: return "FROZEN";
+        default: return "?";
+    }
+}
+
 void print_process_list(process_list_t *list) {
-    printf("\n%-8s %-20s %-8s\n", "PID", "NAME", "CPU%");
-    printf("----------------------------------------\n");
+    printf("\n%-8s %-45s %8s %4s %-12s\n",
+       "PID", "NAME", "CPU%", "FG", "STATE");
+    printf("-----------------------------------------------------------------\n");
     
     for (int i = 0; i < list->count; i++) {
-        printf("%-8d %-20s %-8.1f\n", 
-               list->processes[i].pid,
-               list->processes[i].name,
-               list->processes[i].cpu_usage);
+        process_t *p = &list->processes[i];
+
+        printf("%-8d %-45s %8.1f %4d %-12s\n",
+            p->pid,
+            p->name,
+            p->cpu_usage,
+            p->foreground,
+            state_str(p->state));
     }
     printf("\n");
 }

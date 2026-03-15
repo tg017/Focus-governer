@@ -1,6 +1,7 @@
 #include "process.h"
 #include "monitor.h"
 #include "utils.h"
+#include "policy.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -49,6 +50,13 @@ int main() {
         } else {
             // Calculate CPU usage for all processes
             update_cpu_usage(processes);
+
+            //Marking Foreground
+            pid_t fg_pid = get_foreground_pid();
+
+            update_foreground_status(processes, fg_pid);
+
+            apply_policy(processes);
             
             // Display stats every 5 iterations to avoid clutter
             if (scan_count % 5 == 0) {
