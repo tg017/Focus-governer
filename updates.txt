@@ -1,0 +1,10 @@
+15-3-2026 : 
+temporary - 
+1. process.c line 100 if condition changed
+2. main.c line 68 , 77 sleep at 500 ms original 1s, scancount mod 1 original 5
+
+observation -
+1. process running multiple instances / threads are not being taken care of
+    htop values for such processes are more than governor
+
+2. while closing any process spikes bash cpu-usage

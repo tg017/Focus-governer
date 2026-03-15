@@ -59,7 +59,8 @@ int main() {
             apply_policy(processes);
             
             // Display stats every 5 iterations to avoid clutter
-            if (scan_count % 5 == 0) {
+            // Temporary for every 2 iterations
+            if (scan_count % 1 == 0) {
                 print_stats(processes);
             }
             
@@ -73,7 +74,7 @@ int main() {
             scan_count++;
         }
         
-        sleep(1);
+        usleep(500000);
     }
     
     // Cleanup

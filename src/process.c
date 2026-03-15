@@ -96,12 +96,15 @@ void print_process_list(process_list_t *list) {
     for (int i = 0; i < list->count; i++) {
         process_t *p = &list->processes[i];
 
-        printf("%-8d %-45s %8.1f %4d %-12s\n",
-            p->pid,
-            p->name,
-            p->cpu_usage,
-            p->foreground,
-            state_str(p->state));
+        //temporary debug
+        if((int)p->cpu_usage){
+            printf("%-8d %-45s %8.1f %4d %-12s\n",
+                p->pid,
+                p->name,
+                p->cpu_usage,
+                p->foreground,
+                state_str(p->state));
+        }
     }
     printf("\n");
 }
