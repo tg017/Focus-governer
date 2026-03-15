@@ -1,4 +1,6 @@
-15-3-2026 : 
+15-3-2026 :
+important : gnome session xdotool not work on wayland hence changed to x11(Ubuntu on Xorg).
+
 temporary - 
 1. process.c line 100 if condition changed
 2. main.c line 68 , 77 sleep at 500 ms original 1s, scancount mod 1 original 5
