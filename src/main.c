@@ -74,7 +74,7 @@ int main() {
             scan_count++;
         }
         
-        usleep(500000);
+        usleep(1000000);
     }
     
     // Cleanup

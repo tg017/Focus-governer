@@ -3,7 +3,10 @@ important : gnome session xdotool not work on wayland hence changed to x11(Ubunt
 
 temporary - 
 1. process.c line 100 if condition changed
-2. main.c line 68 , 77 sleep at 500 ms original 1s, scancount mod 1 original 5
+2. main.c line 68 , 77 sleep at 500 ms original 1s, scancount mod 1 original 5. cpu usage update function 0.5*hz. 171
+
+fixes -
+1. monitoring multi-threads
 
 observation -
 1. process running multiple instances / threads are not being taken care of

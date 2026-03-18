@@ -24,10 +24,10 @@ int is_numeric(const char *str) {
     return 1;
 }
 
-int read_process_stats(pid_t pid, unsigned long *utime, 
+int read_process_stats(pid_t pid,pid_t tid, unsigned long *utime, 
                        unsigned long *stime, char *name, int name_len) {
     char path[256];
-    snprintf(path, sizeof(path), "/proc/%d/stat", pid);
+    snprintf(path, sizeof(path), "/proc/%d/task/%d/stat", pid, tid);
     
     FILE *f = fopen(path, "r");
     if (!f) return -1;
@@ -90,36 +90,55 @@ int scan_processes(process_list_t *list) {
     for (int i = 0; i < list->count; i++) {
         list->processes[i].last_seen = 0;  // Will be updated if seen
     }
-    
-    // Scan /proc for numeric entries
+
     while ((entry = readdir(proc_dir)) != NULL) {
         if (!is_numeric(entry->d_name)) continue;
-        
+
         pid_t pid = atoi(entry->d_name);
-        unsigned long utime, stime;
-        char name[MAX_NAME_LEN];
-        
-        if (read_process_stats(pid, &utime, &stime, name, sizeof(name)) == 0) {
-            process_t *proc = find_process(list, pid);
-            
-            if (proc) {
-                // Existing process: update stats
-                proc->last_utime = utime;
-                proc->last_stime = stime;
-                proc->last_seen = time(NULL);
-            } else {
-                // New process: add to list
-                add_process(list, pid, name);
-                proc = find_process(list, pid);
+
+        // Open task directory
+        char task_path[256];
+        snprintf(task_path, sizeof(task_path), "/proc/%d/task", pid);
+
+        DIR *task_dir = opendir(task_path);
+        if (!task_dir) continue;
+
+        struct dirent *task_entry;
+
+        while ((task_entry = readdir(task_dir)) != NULL) {
+            if (!is_numeric(task_entry->d_name)) continue;
+
+            pid_t tid = atoi(task_entry->d_name);
+
+            unsigned long utime, stime;
+            char name[MAX_NAME_LEN];
+
+            if (read_process_stats(pid, tid, &utime, &stime, name, sizeof(name)) == 0) {
+
+                process_t *proc = find_process(list, tid);
+
                 if (proc) {
+                    // Existing thread
                     proc->last_utime = utime;
                     proc->last_stime = stime;
+                    proc->last_seen = time(NULL);
+                } else {
+                    // New thread
+                    add_process(list, tid, name);
+                    proc = find_process(list, tid);
+
+                    if (proc) {
+                        proc->last_utime = utime;
+                        proc->last_stime = stime;
+                        proc->last_seen = time(NULL);
+                    }
                 }
             }
-            scanned++;
         }
+
+        closedir(task_dir);
+
     }
-    closedir(proc_dir);
     
     // Remove processes that weren't seen in this scan
     for (int i = list->count - 1; i >= 0; i--) {

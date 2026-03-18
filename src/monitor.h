@@ -10,7 +10,7 @@ long get_clock_ticks();
 int scan_processes(process_list_t *list);
 
 // Read /proc/[pid]/stat and extract utime/stime
-int read_process_stats(pid_t pid, unsigned long *utime, 
+int read_process_stats(pid_t pid,pid_t tid, unsigned long *utime, 
                        unsigned long *stime, char *name, int name_len);
 
 // Update CPU usage for all processes
