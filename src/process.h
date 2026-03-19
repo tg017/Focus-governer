@@ -17,6 +17,7 @@ typedef enum {
 
 typedef struct {
     pid_t pid;
+    pid_t tgid;   // Thread Group ID (i.e., actual process ID)
     char name[MAX_NAME_LEN];
     
     // CPU tracking
@@ -29,7 +30,7 @@ typedef struct {
     // Process state
     int foreground;        // 1 if foreground, 0 if background
     process_state_t state;
-    int violation_count;
+    int violations;
     
     // Timestamps
     time_t first_seen;

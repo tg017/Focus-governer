@@ -76,6 +76,26 @@ int read_process_stats(pid_t pid,pid_t tid, unsigned long *utime,
     return 0;
 }
 
+int get_tgid(pid_t tid, pid_t *tgid) {
+    char path[256];
+    snprintf(path, sizeof(path), "/proc/%d/status", tid);
+
+    FILE *f = fopen(path, "r");
+    if (!f) return -1;
+
+    char line[256];
+    while (fgets(line, sizeof(line), f)) {
+        if (strncmp(line, "Tgid:", 5) == 0) {
+            sscanf(line, "Tgid:\t%d", tgid);
+            fclose(f);
+            return 0;
+        }
+    }
+
+    fclose(f);
+    return -1;
+}
+
 int scan_processes(process_list_t *list) {
     DIR *proc_dir = opendir("/proc");
     if (!proc_dir) {
@@ -132,7 +152,12 @@ int scan_processes(process_list_t *list) {
                         proc->last_stime = stime;
                         proc->last_seen = time(NULL);
                     }
+                    pid_t tgid;
+                    if (get_tgid(tid, &tgid) == 0) {
+                        proc->tgid = tgid;
+                    }
                 }
+                
             }
         }
 

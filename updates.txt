@@ -13,3 +13,7 @@ observation -
     htop values for such processes are more than governor
 
 2. while closing any process spikes bash cpu-usage
+
+
+testing -
+1. to simulate a computationally expensive / hog process play 4-5 4k videos in browser

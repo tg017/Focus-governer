@@ -47,7 +47,7 @@ void add_process(process_list_t *list, pid_t pid, const char *name) {
     p->last_stime = 0;
     p->foreground = 0;
     p->state = STATE_NORMAL;
-    p->violation_count = 0;
+    p->violations = 0;
     
     for (int i = 0; i < HISTORY_SIZE; i++) {
         p->history[i] = 0.0;
@@ -89,8 +89,8 @@ const char* state_str(process_state_t s) {
 }
 
 void print_process_list(process_list_t *list) {
-    printf("\n%-8s %-45s %8s %4s %-12s\n",
-       "PID", "NAME", "CPU%", "FG", "STATE");
+    printf("\n%-8s %-8s %-45s %8s %4s %-12s\n",
+       "PID", "TGID", "NAME", "CPU%", "FG", "STATE");
     printf("-----------------------------------------------------------------\n");
     
     for (int i = 0; i < list->count; i++) {
@@ -98,8 +98,9 @@ void print_process_list(process_list_t *list) {
 
         //temporary debug
         if((int)p->cpu_usage){
-            printf("%-8d %-45s %8.1f %4d %-12s\n",
+            printf("%-8d %-8d %-45s %8.1f %4d %-12s\n",
                 p->pid,
+                p->tgid,
                 p->name,
                 p->cpu_usage,
                 p->foreground,
