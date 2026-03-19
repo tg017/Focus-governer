@@ -23,12 +23,21 @@ pid_t get_foreground_pid() {
 
 void update_foreground_status(process_list_t *list, pid_t fg_pid) {
 
-    for (int i = 0; i < list->count; i++) {
+    pid_t fg_tgid = -1;
+    if (fg_pid > 0) {
+        process_t *fg_proc = find_process(list, fg_pid);
+        if (fg_proc) {
+            fg_tgid = fg_proc->tgid;
+        }
+    }
 
-        if (list->processes[i].pid == fg_pid)
+    // Mark all threads with that tgid as foreground, others background
+    for (int i = 0; i < list->count; i++) {
+        if (fg_tgid != -1 && list->processes[i].tgid == fg_tgid) {
             list->processes[i].foreground = 1;
-        else
+        } else {
             list->processes[i].foreground = 0;
+        }
     }
 }
 
@@ -76,6 +85,17 @@ void apply_policy(process_list_t *list) {
         }
 
         if (!rep) continue;
+
+        // If the process is foreground, reset and skip throttling
+        if (rep->foreground) {
+            for (int k = 0; k < list->count; k++) {
+                if (list->processes[k].tgid == tgid) {
+                    list->processes[k].violations = 0;
+                    list->processes[k].state = STATE_NORMAL;
+                }
+            }
+            continue;
+        }
 
         // Correct violation tracking
         if (total_cpu > CPU_THRESHOLD) {
