@@ -2,6 +2,9 @@
 #define UTILS_H
 
 #include "process.h"
+#include <sys/types.h>
+
+extern pid_t GOVERNOR_PID;
 
 void log_message(const char *level, const char *message);
 void log_action(const char *action, pid_t pid, const char *name);

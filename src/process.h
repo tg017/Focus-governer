@@ -42,6 +42,8 @@ typedef struct {
     process_t *processes;
     int count;
     int capacity;
+
+    int system_stress;
 } process_list_t;
 
 // Function declarations

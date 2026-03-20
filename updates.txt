@@ -14,6 +14,13 @@ observation -
 
 2. while closing any process spikes bash cpu-usage
 
+3. governor stopping after some time . error : opendir /proc: Too many open files
+
+4. policy line 89, there is fg_cpu check, if it create problems we can remove it 
+
+5. frozen process does not wake after bringing to foreground
+
+6. have not tested if cgroup is working or not using values 
 
 testing -
 1. to simulate a computationally expensive / hog process play 4-5 4k videos in browser

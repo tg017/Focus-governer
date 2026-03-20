@@ -2,12 +2,14 @@
 #include "monitor.h"
 #include "utils.h"
 #include "policy.h"
+#include "enforce.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
 
 volatile int running = 1;
+pid_t GOVERNOR_PID;
 
 void handle_signal(int sig) {
     if (sig == SIGINT) {
@@ -17,6 +19,9 @@ void handle_signal(int sig) {
 }
 
 int main() {
+
+    GOVERNOR_PID = getpid();
+
     // Set up signal handler for Ctrl+C
     signal(SIGINT, handle_signal);
     
@@ -57,6 +62,8 @@ int main() {
             update_foreground_status(processes, fg_pid);
 
             apply_policy(processes);
+
+            apply_enforcement(processes);
             
             // Display stats every 5 iterations to avoid clutter
             // Temporary for every 2 iterations

@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g -I./src
 TARGET = governor
-OBJS = src/main.o src/monitor.o src/process.o src/utils.o src/policy.o
+OBJS = src/main.o src/monitor.o src/process.o src/utils.o src/policy.o src/enforce.o
 
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET)

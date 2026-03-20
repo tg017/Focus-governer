@@ -1,9 +1,16 @@
 #include "policy.h"
+#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 #define CPU_THRESHOLD 30.0
-#define VIOLATION_LIMIT 2
+
+#define VIOLATION_L1 2
+#define VIOLATION_L2 4
+#define VIOLATION_L3 6
+
+#define SYSTEM_CPU_THRESHOLD 80.0
+#define FG_CPU_MIN 20.0
 
 pid_t get_foreground_pid() {
 
@@ -42,17 +49,26 @@ void update_foreground_status(process_list_t *list, pid_t fg_pid) {
 }
 
 void apply_policy(process_list_t *list) {
+
     int n = list->count;
 
     pid_t *tgids = malloc(n * sizeof(pid_t));
     float *cpu_sum = calloc(n, sizeof(float));
     int group_count = 0;
 
+    float total_cpu = 0.0;
+    float fg_cpu = 0.0;
+
+    // 🔹 Aggregate CPU per process (tgid)
     for (int i = 0; i < list->count; i++) {
         process_t *p = &list->processes[i];
 
-        int found = -1;
+        total_cpu += p->cpu_usage;
 
+        if (p->foreground)
+            fg_cpu += p->cpu_usage;
+
+        int found = -1;
         for (int j = 0; j < group_count; j++) {
             if (tgids[j] == p->tgid) {
                 found = j;
@@ -69,14 +85,17 @@ void apply_policy(process_list_t *list) {
         }
     }
 
+    // 🔥 Foreground starvation detection
+    list->system_stress = (total_cpu > SYSTEM_CPU_THRESHOLD && fg_cpu < FG_CPU_MIN);
+
     for (int i = 0; i < group_count; i++) {
 
         pid_t tgid = tgids[i];
-        float total_cpu = cpu_sum[i];
+        float proc_cpu = cpu_sum[i];
 
-        // Find a representative thread for this process
+        if (tgid == GOVERNOR_PID) continue;
+
         process_t *rep = NULL;
-
         for (int k = 0; k < list->count; k++) {
             if (list->processes[k].tgid == tgid) {
                 rep = &list->processes[k];
@@ -86,32 +105,51 @@ void apply_policy(process_list_t *list) {
 
         if (!rep) continue;
 
-        // If the process is foreground, reset and skip throttling
+        // ✅ Foreground always protected
         if (rep->foreground) {
+            rep->violations = 0;
+
             for (int k = 0; k < list->count; k++) {
                 if (list->processes[k].tgid == tgid) {
-                    list->processes[k].violations = 0;
                     list->processes[k].state = STATE_NORMAL;
                 }
             }
             continue;
         }
 
-        // Correct violation tracking
-        if (total_cpu > CPU_THRESHOLD) {
-            rep->violations++;
-        } else if (rep->violations > 0) {
-            rep->violations--;
+        // ❗ If system not stressed → do nothing
+        if (!list->system_stress) {
+            rep->violations = 0;
+
+            for (int k = 0; k < list->count; k++) {
+                if (list->processes[k].tgid == tgid) {
+                    list->processes[k].state = STATE_NORMAL;
+                }
+            }
+            continue;
         }
 
-        // Decide state
+        // 🔹 Violation logic
+        if (proc_cpu > CPU_THRESHOLD) {
+            rep->violations++;
+        } else {
+            rep->violations -= 2;
+            if (rep->violations < 0) rep->violations = 0;
+        }
+
+        // 🔹 Multi-level state decision
         int state;
-        if (rep->violations >= VIOLATION_LIMIT)
+
+        if (rep->violations >= VIOLATION_L3)
+            state = STATE_FROZEN;
+        else if (rep->violations >= VIOLATION_L2)
+            state = STATE_HARD_THROTTLED;
+        else if (rep->violations >= VIOLATION_L1)
             state = STATE_THROTTLED;
         else
             state = STATE_NORMAL;
 
-        // Apply to ALL threads of this process
+        // Apply to all threads
         for (int k = 0; k < list->count; k++) {
             if (list->processes[k].tgid == tgid) {
                 list->processes[k].state = state;
@@ -120,5 +158,5 @@ void apply_policy(process_list_t *list) {
     }
 
     free(tgids);
-    free(cpu_sum);  
+    free(cpu_sum);
 }
