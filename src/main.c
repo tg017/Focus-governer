@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "policy.h"
 #include "enforce.h"
+#include "dashboard.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -38,6 +39,8 @@ int main() {
     long hz = get_clock_ticks();
     printf("System clock ticks per second: %ld\n", hz);
     printf("Monitoring every 1 second. Press Ctrl+C to stop.\n");
+    printf("Starting ncurses dashboard...\n");
+    dashboard_init();   // start ncurses mode
     
     // Main loop
     int first_scan = 1;
@@ -51,7 +54,7 @@ int main() {
             // First scan: just collect baseline
             first_scan = 0;
             log_message("INFO", "First scan complete - collecting baseline");
-            printf("First scan complete. Found %d processes.\n", processes->count);
+            // printf("First scan complete. Found %d processes.\n", processes->count);
         } else {
             // Calculate CPU usage for all processes
             update_cpu_usage(processes);
@@ -64,12 +67,14 @@ int main() {
             apply_policy(processes);
 
             apply_enforcement(processes);
+
+            dashboard_update(processes);
             
             // Display stats every 5 iterations to avoid clutter
             // Temporary for every 2 iterations
-            if (scan_count % 1 == 0) {
-                print_stats(processes);
-            }
+            // if (scan_count % 1 == 0) {
+            //     print_stats(processes);
+            // }
             
             // Log total processes periodically
             if (scan_count % 10 == 0) {
@@ -80,11 +85,17 @@ int main() {
             
             scan_count++;
         }
+
+        if (dashboard_should_quit()) {
+            running = 0;
+            break;
+        }
         
         usleep(1000000);
     }
     
     // Cleanup
+    dashboard_close();
     free_process_list(processes);
     log_message("INFO", "Governor stopped");
     printf("Cleanup complete. Exiting.\n");

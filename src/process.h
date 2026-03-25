@@ -42,6 +42,7 @@ typedef struct {
     process_t *processes;
     int count;
     int capacity;
+    float energy_saved;
 
     int system_stress;
 } process_list_t;

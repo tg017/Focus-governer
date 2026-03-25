@@ -22,5 +22,16 @@ observation -
 
 6. have not tested if cgroup is working or not using values 
 
+7. log file is cluttered due to ACTION_BOOST -- corrected
+
+8. governor usage climb upto 9-10%
+
+9. enforce.c 175 : energy saved logic should be carefully handled we should only increase energy saved when we really are saving
+
+10. system_cpu_threshold is 80percent but the total-sum is exceeding 100.
+
+11. when running only yes in terminal (without dev/null) it is not being throttled.
+
 testing -
 1. to simulate a computationally expensive / hog process play 4-5 4k videos in browser
+2. Silver lining cpu stress test : https://silver.urih.com/

@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#define CPU_THRESHOLD 30.0
+
 // Skip kernel threads (pid < 100) and essential system processes
 int is_safe_to_throttle(pid_t pid) {
     if (pid < 100) return 0;  // kernel threads
@@ -35,7 +37,7 @@ void boost_foreground(process_t *proc) {
     if (!proc) return;
 
     if (setpriority(PRIO_PROCESS, proc->tgid, -10) == 0) {
-        log_action("BOOST", proc->pid, proc->name);
+        // log_action("BOOST", proc->pid, proc->name);
     }
 }
 
@@ -140,6 +142,7 @@ void cleanup_cgroup(process_t *proc) {
 
 void apply_enforcement(process_list_t *list) {
     process_t *fg_proc = NULL;
+    float saved_this_second = 0.0;
 
     // Find foreground main thread
     for (int i = 0; i < list->count; i++) {
@@ -166,6 +169,12 @@ void apply_enforcement(process_list_t *list) {
         if (p->pid != p->tgid) continue;   // only main thread does enforcement
         if (p->tgid == GOVERNOR_PID) continue;
         if (p->foreground) continue;
+
+        if (p->state == STATE_THROTTLED || p->state == STATE_HARD_THROTTLED) {
+            // The process is being limited; we assume it would have used up to threshold
+            // float prevented = p->cpu_usage / 100.0;
+            // if (prevented > 0 && list->system_stress) saved_this_second += prevented;
+        }
 
 
         switch (p->state) {
@@ -194,4 +203,5 @@ void apply_enforcement(process_list_t *list) {
             enforce_wake(p);
         }
     }
+    list->energy_saved += saved_this_second;
 }
