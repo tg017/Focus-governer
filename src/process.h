@@ -19,6 +19,7 @@ typedef struct {
     pid_t pid;
     pid_t tgid;   // Thread Group ID (i.e., actual process ID)
     char name[MAX_NAME_LEN];
+    unsigned long window_id;
     
     // CPU tracking
     float cpu_usage;

@@ -2,6 +2,8 @@
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
 
 #define CPU_THRESHOLD 30.0
 
@@ -11,6 +13,32 @@
 
 #define SYSTEM_CPU_THRESHOLD 80.0
 #define FG_CPU_MIN 20.0
+
+// Get active window ID
+unsigned long get_active_window() {
+    FILE *fp = popen("xdotool getwindowfocus 2>/dev/null", "r");
+    if (!fp) return 0;
+
+    unsigned long win = 0;
+    fscanf(fp, "%lu", &win);
+    pclose(fp);
+    return win;
+}
+
+// Get PID from window ID
+pid_t get_pid_from_window(unsigned long win) {
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "xdotool getwindowpid %lu 2>/dev/null", win);
+
+    FILE *fp = popen(cmd, "r");
+    if (!fp) return -1;
+
+    pid_t pid = -1;
+    fscanf(fp, "%d", &pid);
+    pclose(fp);
+    return pid;
+}
+
 
 pid_t get_foreground_pid() {
 
@@ -105,8 +133,10 @@ void apply_policy(process_list_t *list) {
 
         if (!rep) continue;
 
+        if(rep->state == STATE_FROZEN) continue;
+
         // ✅ Foreground always protected
-        if (rep->foreground) {
+        if (rep->foreground && rep->state!=STATE_FROZEN) {
             rep->violations = 0;
 
             for (int k = 0; k < list->count; k++) {
@@ -118,7 +148,7 @@ void apply_policy(process_list_t *list) {
         }
 
         // ❗ If system not stressed → do nothing
-        if (!list->system_stress) {
+        if (!list->system_stress && rep->state != STATE_FROZEN) {
             rep->violations = 0;
 
             for (int k = 0; k < list->count; k++) {
@@ -130,24 +160,38 @@ void apply_policy(process_list_t *list) {
         }
 
         // 🔹 Violation logic
-        if (proc_cpu > CPU_THRESHOLD) {
-            rep->violations++;
-        } else {
-            rep->violations -= 2;
-            if (rep->violations < 0) rep->violations = 0;
+        if(rep->state!=STATE_FROZEN){
+            if (proc_cpu > CPU_THRESHOLD) {
+                rep->violations++;
+            } else {
+                rep->violations -= 2;
+                if (rep->violations < 0) rep->violations = 0;
+            }
         }
 
         // 🔹 Multi-level state decision
-        int state;
+        int state = rep->state;
 
         if (rep->violations >= VIOLATION_L3)
             state = STATE_FROZEN;
-        else if (rep->violations >= VIOLATION_L2)
+        else if (rep->violations >= VIOLATION_L2){
+            // if (state == STATE_FROZEN) {
+            //     kill(rep->pid, SIGCONT);
+            // }
             state = STATE_HARD_THROTTLED;
-        else if (rep->violations >= VIOLATION_L1)
+        }
+        else if (rep->violations >= VIOLATION_L1){
+            // if (state == STATE_FROZEN) {
+            //     kill(rep->pid, SIGCONT);
+            // }
             state = STATE_THROTTLED;
-        else
+        }
+        else{
+            // if (state == STATE_FROZEN) {
+            //     kill(rep->pid, SIGCONT);
+            // }
             state = STATE_NORMAL;
+        }
 
         // Apply to all threads
         for (int k = 0; k < list->count; k++) {

@@ -38,8 +38,10 @@ void dashboard_update(process_list_t *list) {
     for (int i = 0; i < list->count && row < max_rows; i++) {
         process_t *p = &list->processes[i];
 
-        if((int)p->cpu_usage<1 && (!p->foreground || p->state != STATE_NORMAL)){
-            continue;
+        if(p->state!=STATE_FROZEN){
+            if((int)p->cpu_usage<1 && (!p->foreground || p->state != STATE_NORMAL)){
+                continue;
+            }
         }
 
         // Color based on state

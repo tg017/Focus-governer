@@ -8,13 +8,13 @@ temporary -
 fixes -
 1. monitoring multi-threads
 
-observation -
+observation/bugs -
 1. process running multiple instances / threads are not being taken care of
-    htop values for such processes are more than governor
+    htop values for such processes are more than governor -- corrected
 
-2. while closing any process spikes bash cpu-usage
+2. while closing any process spikes bash cpu-usage 
 
-3. governor stopping after some time . error : opendir /proc: Too many open files
+3. governor stopping after some time . error : opendir /proc: Too many open files 
 
 4. policy line 89, there is fg_cpu check, if it create problems we can remove it 
 
@@ -31,6 +31,8 @@ observation -
 10. system_cpu_threshold is 80percent but the total-sum is exceeding 100.
 
 11. when running only yes in terminal (without dev/null) it is not being throttled.
+---> genome-terminal is piping the output of yes process so terminal has cpu-usage more than 20% which indicates foreground 
+process is not starving and hence the system_stress flag is false therefore no throttling happens.
 
 testing -
 1. to simulate a computationally expensive / hog process play 4-5 4k videos in browser

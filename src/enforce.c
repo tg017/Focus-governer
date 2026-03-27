@@ -1,6 +1,7 @@
 #include "enforce.h"
 #include "process.h"
 #include "utils.h"
+#include "policy.h"
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <signal.h>
@@ -168,7 +169,6 @@ void apply_enforcement(process_list_t *list) {
         // We'll enforce on the thread that is also the tgid (main thread)
         if (p->pid != p->tgid) continue;   // only main thread does enforcement
         if (p->tgid == GOVERNOR_PID) continue;
-        if (p->foreground) continue;
 
         if (p->state == STATE_THROTTLED || p->state == STATE_HARD_THROTTLED) {
             // The process is being limited; we assume it would have used up to threshold
@@ -176,6 +176,13 @@ void apply_enforcement(process_list_t *list) {
             // if (prevented > 0 && list->system_stress) saved_this_second += prevented;
         }
 
+        // unsigned long active_win = get_active_window();
+        if (p->state == STATE_FROZEN) {
+            if(p->foreground) enforce_wake(p);
+            continue;
+        }
+
+        if (p->foreground) continue;
 
         switch (p->state) {
             case STATE_NORMAL:
@@ -198,10 +205,10 @@ void apply_enforcement(process_list_t *list) {
         }
 
         // If process is foreground and frozen, wake it
-        if (p->foreground && p->state == STATE_FROZEN) {
-            // printf("%d, tried to wake _______________________________________\n", p->pid);
-            enforce_wake(p);
-        }
+        // if (p->foreground && p->state == STATE_FROZEN) {
+        //     // printf("%d, tried to wake _______________________________________\n", p->pid);
+        //     enforce_wake(p);
+        // }
     }
     list->energy_saved += saved_this_second;
 }
