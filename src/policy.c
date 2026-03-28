@@ -1,5 +1,6 @@
 #include "policy.h"
 #include "utils.h"
+#include "enforce.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -170,33 +171,25 @@ void apply_policy(process_list_t *list) {
         }
 
         // 🔹 Multi-level state decision
-        int state = rep->state;
 
-        if (rep->violations >= VIOLATION_L3)
-            state = STATE_FROZEN;
+        if (rep->violations >= VIOLATION_L3){
+            rep->state = STATE_FROZEN;
+            enforce_freeze(rep);
+        }
         else if (rep->violations >= VIOLATION_L2){
-            // if (state == STATE_FROZEN) {
-            //     kill(rep->pid, SIGCONT);
-            // }
-            state = STATE_HARD_THROTTLED;
+            rep->state = STATE_HARD_THROTTLED;
         }
         else if (rep->violations >= VIOLATION_L1){
-            // if (state == STATE_FROZEN) {
-            //     kill(rep->pid, SIGCONT);
-            // }
-            state = STATE_THROTTLED;
+            rep->state = STATE_THROTTLED;
         }
         else{
-            // if (state == STATE_FROZEN) {
-            //     kill(rep->pid, SIGCONT);
-            // }
-            state = STATE_NORMAL;
+            rep->state = STATE_NORMAL;
         }
 
         // Apply to all threads
         for (int k = 0; k < list->count; k++) {
             if (list->processes[k].tgid == tgid) {
-                list->processes[k].state = state;
+                list->processes[k].state = rep->state;
             }
         }
     }

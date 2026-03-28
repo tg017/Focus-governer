@@ -18,7 +18,7 @@ observation/bugs -
 
 4. policy line 89, there is fg_cpu check, if it create problems we can remove it 
 
-5. frozen process does not wake after bringing to foreground
+5. frozen process does not wake after bringing to foreground -- corrected
 
 6. have not tested if cgroup is working or not using values 
 
@@ -34,6 +34,9 @@ observation/bugs -
 ---> genome-terminal is piping the output of yes process so terminal has cpu-usage more than 20% which indicates foreground 
 process is not starving and hence the system_stress flag is false therefore no throttling happens.
 
+12. when we are waking a process coming to foreground, we are not cleaning its cgroup
+
 testing -
 1. to simulate a computationally expensive / hog process play 4-5 4k videos in browser
 2. Silver lining cpu stress test : https://silver.urih.com/
+3. in the file manager just start searching in the root directory

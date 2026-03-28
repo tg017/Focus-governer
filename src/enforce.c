@@ -108,6 +108,7 @@ void enforce_wake(process_t *proc) {
         log_action("WAKE", proc->pid, proc->name);
         // After waking, reset state to NORMAL (policy will re-evaluate)
         proc->state = STATE_NORMAL;
+        cleanup_cgroup(proc);
     } else if (errno != ESRCH) {
         char msg[256];
         snprintf(msg, sizeof(msg), "kill SIGCONT failed: %s", strerror(errno));
