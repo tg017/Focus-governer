@@ -108,6 +108,8 @@ void enforce_wake(process_t *proc) {
         log_action("WAKE", proc->pid, proc->name);
         // After waking, reset state to NORMAL (policy will re-evaluate)
         proc->state = STATE_NORMAL;
+        proc->was_throttled = 0;
+        proc->baseline_cpu = 0.0;
         cleanup_cgroup(proc);
     } else if (errno != ESRCH) {
         char msg[256];
@@ -171,10 +173,15 @@ void apply_enforcement(process_list_t *list) {
         if (p->pid != p->tgid) continue;   // only main thread does enforcement
         if (p->tgid == GOVERNOR_PID) continue;
 
-        if (p->state == STATE_THROTTLED || p->state == STATE_HARD_THROTTLED) {
-            // The process is being limited; we assume it would have used up to threshold
-            // float prevented = p->cpu_usage / 100.0;
-            // if (prevented > 0 && list->system_stress) saved_this_second += prevented;
+        if (p->was_throttled && p->baseline_cpu > 0) {
+
+            float current = p->cpu_usage;
+
+            float saved = p->baseline_cpu - current;
+
+            if (saved > 0) {
+                saved_this_second += saved / 100.0;  // convert % → CPU-seconds
+            }
         }
 
         // unsigned long active_win = get_active_window();

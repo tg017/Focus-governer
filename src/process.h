@@ -32,7 +32,8 @@ typedef struct {
     int foreground;        // 1 if foreground, 0 if background
     process_state_t state;
     int violations;
-    
+    float baseline_cpu;     // CPU before throttling
+    int was_throttled;      // flag to track transition
     // Timestamps
     time_t first_seen;
     time_t last_seen;

@@ -50,6 +50,8 @@ void add_process(process_list_t *list, pid_t pid, const char *name) {
     p->foreground = 0;
     p->state = STATE_NORMAL;
     p->violations = 0;
+    p->baseline_cpu = 0.0;
+    p->was_throttled = 0;
     
     for (int i = 0; i < HISTORY_SIZE; i++) {
         p->history[i] = 0.0;

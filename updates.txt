@@ -16,17 +16,17 @@ observation/bugs -
 
 3. governor stopping after some time . error : opendir /proc: Too many open files 
 
-4. policy line 89, there is fg_cpu check, if it create problems we can remove it 
+4. policy line 89, there is fg_cpu check, if it create problems we can remove it -- corrected
 
 5. frozen process does not wake after bringing to foreground -- corrected
 
-6. have not tested if cgroup is working or not using values 
+6. have not tested if cgroup is working or not using values -- corrected
 
 7. log file is cluttered due to ACTION_BOOST -- corrected
 
-8. governor usage climb upto 9-10%
+8. governor usage climb upto 9-10% -- not_encountered_recently
 
-9. enforce.c 175 : energy saved logic should be carefully handled we should only increase energy saved when we really are saving
+9. enforce.c 175 : energy saved logic should be carefully handled we should only increase energy saved when we really are saving  -- corrected
 
 10. system_cpu_threshold is 80percent but the total-sum is exceeding 100.
 
@@ -34,7 +34,7 @@ observation/bugs -
 ---> genome-terminal is piping the output of yes process so terminal has cpu-usage more than 20% which indicates foreground 
 process is not starving and hence the system_stress flag is false therefore no throttling happens.
 
-12. when we are waking a process coming to foreground, we are not cleaning its cgroup
+12. when we are waking a process coming to foreground, we are not cleaning its cgroup -- corrected
 
 testing -
 1. to simulate a computationally expensive / hog process play 4-5 4k videos in browser

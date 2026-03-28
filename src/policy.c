@@ -186,6 +186,16 @@ void apply_policy(process_list_t *list) {
             rep->state = STATE_NORMAL;
         }
 
+        if (rep->state == STATE_THROTTLED && rep->was_throttled == 0) {
+            rep->baseline_cpu = proc_cpu;
+            rep->was_throttled = 1;
+        }
+
+        if (rep->state == STATE_NORMAL) {
+            rep->was_throttled = 0;
+            rep->baseline_cpu = 0.0;
+        }
+
         // Apply to all threads
         for (int k = 0; k < list->count; k++) {
             if (list->processes[k].tgid == tgid) {
