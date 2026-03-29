@@ -15,6 +15,7 @@
 #define SYSTEM_CPU_THRESHOLD 80.0
 #define FG_CPU_MIN 20.0
 
+
 // Get active window ID
 unsigned long get_active_window() {
     FILE *fp = popen("xdotool getwindowfocus 2>/dev/null", "r");
@@ -85,14 +86,14 @@ void apply_policy(process_list_t *list) {
     float *cpu_sum = calloc(n, sizeof(float));
     int group_count = 0;
 
-    float total_cpu = 0.0;
+    list->total_cpu = 0.0;
     float fg_cpu = 0.0;
 
     // 🔹 Aggregate CPU per process (tgid)
     for (int i = 0; i < list->count; i++) {
         process_t *p = &list->processes[i];
 
-        total_cpu += p->cpu_usage;
+        list->total_cpu += p->cpu_usage;
 
         if (p->foreground)
             fg_cpu += p->cpu_usage;
@@ -115,7 +116,8 @@ void apply_policy(process_list_t *list) {
     }
 
     // 🔥 Foreground starvation detection
-    list->system_stress = (total_cpu > SYSTEM_CPU_THRESHOLD && fg_cpu < FG_CPU_MIN);
+    // list->system_stress = (total_cpu > SYSTEM_CPU_THRESHOLD && fg_cpu < FG_CPU_MIN);
+    list->system_stress = (list->total_cpu > SYSTEM_CPU_THRESHOLD);
 
     for (int i = 0; i < group_count; i++) {
 

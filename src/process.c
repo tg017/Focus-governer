@@ -12,6 +12,7 @@ process_list_t* init_process_list() {
     list->count = 0;
     list->capacity = 0;
     list->energy_saved = 0.0;
+    list->total_cpu = 0.0;
     return list;
 }
 

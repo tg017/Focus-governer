@@ -6,6 +6,8 @@
 
 #define MAX_PROCS 4096
 
+float tot_cpu = 0.0;
+
 typedef struct {
     pid_t tgid;
     char name[MAX_NAME_LEN];
@@ -44,6 +46,12 @@ int aggregate_processes(process_list_t *list, proc_group_t groups[]) {
             groups[found].cpu += p->cpu_usage;
             groups[found].threads++;
         }
+    }
+    for(int i=0; i<gcount; i++){
+        if(groups[i].cpu > 100){
+            groups[i].cpu = 100;
+        }
+        tot_cpu += groups[i].cpu;
     }
 
     return gcount;
@@ -97,6 +105,7 @@ void dashboard_update(process_list_t *list) {
     clear();
 
     proc_group_t groups[MAX_PROCS];
+    tot_cpu = 0.0;
     int gcount = aggregate_processes(list, groups);
 
     int mid = COLS * 0.6;   // split screen
@@ -108,6 +117,7 @@ void dashboard_update(process_list_t *list) {
 
     mvprintw(1, 2, "Energy saved: %.2f CPU-sec", list->energy_saved);
     mvprintw(2, 2, "System stress: %s", list->system_stress ? "YES" : "NO");
+    mvprintw(3, 2, "Total CPU Usage: %.2f", tot_cpu);
 
     /* 🔹 LEFT TABLE (TGID view) */
     mvprintw(4, 2, "%-8s %-45s %8s %8s %-12s",
