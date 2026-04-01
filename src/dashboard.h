@@ -6,6 +6,6 @@
 void dashboard_init();
 void dashboard_update(process_list_t *list);
 void dashboard_close();
-int dashboard_should_quit();   // returns 1 if 'q' was pressed
+int dashboard_should_quit();
 
 #endif

@@ -7,6 +7,7 @@
 #include <signal.h>
 
 #define CPU_THRESHOLD 30.0
+#define ALPHA 0.3 
 
 #define VIOLATION_L1 2
 #define VIOLATION_L2 4
@@ -15,31 +16,6 @@
 #define SYSTEM_CPU_THRESHOLD 80.0
 #define FG_CPU_MIN 20.0
 
-
-// Get active window ID
-unsigned long get_active_window() {
-    FILE *fp = popen("xdotool getwindowfocus 2>/dev/null", "r");
-    if (!fp) return 0;
-
-    unsigned long win = 0;
-    fscanf(fp, "%lu", &win);
-    pclose(fp);
-    return win;
-}
-
-// Get PID from window ID
-pid_t get_pid_from_window(unsigned long win) {
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd), "xdotool getwindowpid %lu 2>/dev/null", win);
-
-    FILE *fp = popen(cmd, "r");
-    if (!fp) return -1;
-
-    pid_t pid = -1;
-    fscanf(fp, "%d", &pid);
-    pclose(fp);
-    return pid;
-}
 
 
 pid_t get_foreground_pid() {
@@ -68,7 +44,6 @@ void update_foreground_status(process_list_t *list, pid_t fg_pid) {
         }
     }
 
-    // Mark all threads with that tgid as foreground, others background
     for (int i = 0; i < list->count; i++) {
         if (fg_tgid != -1 && list->processes[i].tgid == fg_tgid) {
             list->processes[i].foreground = 1;
@@ -89,7 +64,6 @@ void apply_policy(process_list_t *list) {
     list->total_cpu = 0.0;
     float fg_cpu = 0.0;
 
-    // 🔹 Aggregate CPU per process (tgid)
     for (int i = 0; i < list->count; i++) {
         process_t *p = &list->processes[i];
 
@@ -115,9 +89,9 @@ void apply_policy(process_list_t *list) {
         }
     }
 
-    // 🔥 Foreground starvation detection
-    // list->system_stress = (total_cpu > SYSTEM_CPU_THRESHOLD && fg_cpu < FG_CPU_MIN);
-    list->system_stress = (list->total_cpu > SYSTEM_CPU_THRESHOLD);
+    list->avg_cpu = (ALPHA * list->total_cpu) + ((1 - ALPHA) * list->avg_cpu);
+
+    list->system_stress = (list->avg_cpu > SYSTEM_CPU_THRESHOLD);
 
     for (int i = 0; i < group_count; i++) {
 
@@ -138,7 +112,6 @@ void apply_policy(process_list_t *list) {
 
         if(rep->state == STATE_FROZEN) continue;
 
-        // ✅ Foreground always protected
         if (rep->foreground && rep->state!=STATE_FROZEN) {
             rep->violations = 0;
 
@@ -150,7 +123,6 @@ void apply_policy(process_list_t *list) {
             continue;
         }
 
-        // ❗ If system not stressed → do nothing
         if (!list->system_stress && rep->state != STATE_FROZEN) {
             rep->violations = 0;
 
@@ -162,7 +134,6 @@ void apply_policy(process_list_t *list) {
             continue;
         }
 
-        // 🔹 Violation logic
         if(rep->state!=STATE_FROZEN){
             if (proc_cpu > CPU_THRESHOLD) {
                 rep->violations++;
@@ -172,7 +143,6 @@ void apply_policy(process_list_t *list) {
             }
         }
 
-        // 🔹 Multi-level state decision
 
         if (rep->violations >= VIOLATION_L3){
             rep->state = STATE_FROZEN;
@@ -198,7 +168,6 @@ void apply_policy(process_list_t *list) {
             rep->baseline_cpu = 0.0;
         }
 
-        // Apply to all threads
         for (int k = 0; k < list->count; k++) {
             if (list->processes[k].tgid == tgid) {
                 list->processes[k].state = rep->state;

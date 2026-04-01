@@ -22,11 +22,8 @@ void handle_signal(int sig) {
 int main() {
 
     GOVERNOR_PID = getpid();
-
-    // Set up signal handler for Ctrl+C
     signal(SIGINT, handle_signal);
     
-    // Initialize
     print_banner();
     log_message("INFO", "Governor started (Phase 1)");
     
@@ -40,26 +37,20 @@ int main() {
     printf("System clock ticks per second: %ld\n", hz);
     printf("Monitoring every 1 second. Press Ctrl+C to stop.\n");
     printf("Starting ncurses dashboard...\n");
-    dashboard_init();   // start ncurses mode
-    
-    // Main loop
+    dashboard_init(); 
+
     int first_scan = 1;
     int scan_count = 0;
     
     while (running) {
-        // Scan /proc
         int count = scan_processes(processes);
         
         if (first_scan) {
-            // First scan: just collect baseline
             first_scan = 0;
             log_message("INFO", "First scan complete - collecting baseline");
-            // printf("First scan complete. Found %d processes.\n", processes->count);
         } else {
-            // Calculate CPU usage for all processes
             update_cpu_usage(processes);
 
-            //Marking Foreground
             pid_t fg_pid = get_foreground_pid();
 
             update_foreground_status(processes, fg_pid);
@@ -70,13 +61,6 @@ int main() {
 
             dashboard_update(processes);
             
-            // Display stats every 5 iterations to avoid clutter
-            // Temporary for every 2 iterations
-            // if (scan_count % 1 == 0) {
-            //     print_stats(processes);
-            // }
-            
-            // Log total processes periodically
             if (scan_count % 10 == 0) {
                 char msg[100];
                 snprintf(msg, sizeof(msg), "Active processes: %d", processes->count);
@@ -94,7 +78,6 @@ int main() {
         usleep(1000000);
     }
     
-    // Cleanup
     dashboard_close();
     free_process_list(processes);
     log_message("INFO", "Governor stopped");

@@ -31,15 +31,15 @@ void log_action(const char *action, pid_t pid, const char *name) {
 void print_banner() {
     printf("\n");
     printf("========================================\n");
-    printf("  Focus-Aware Process Governor - Phase 1\n");
+    printf("  Focus-Aware Process Governor  \n");
     printf("========================================\n");
     printf("\n");
 }
 
-void print_stats(process_list_t *list) {
-    static int counter = 0;
-    printf("\n[Update %d] ", ++counter);
-    fflush(stdout);
-    system("date");
-    print_process_list(list);
-}
+// void print_stats(process_list_t *list) {
+//     static int counter = 0;
+//     printf("\n[Update %d] ", ++counter);
+//     fflush(stdout);
+//     system("date");
+//     print_process_list(list);
+// }

@@ -30,11 +30,13 @@ observation/bugs -
 
 10. system_cpu_threshold is 80percent but the total-sum is exceeding 100.
 
-11. when running only yes in terminal (without dev/null) it is not being throttled.
+11. when running only yes in terminal (without dev/null) it is not being throttled. -- corrected
 ---> genome-terminal is piping the output of yes process so terminal has cpu-usage more than 20% which indicates foreground 
 process is not starving and hence the system_stress flag is false therefore no throttling happens.
 
 12. when we are waking a process coming to foreground, we are not cleaning its cgroup -- corrected
+
+13. cgroup is set to 50% not 10%.
 
 testing -
 1. to simulate a computationally expensive / hog process play 4-5 4k videos in browser

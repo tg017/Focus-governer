@@ -12,7 +12,7 @@ long get_clock_ticks() {
     long ticks = sysconf(_SC_CLK_TCK);
     if (ticks == -1) {
         perror("sysconf");
-        return 100;  // Default fallback
+        return 100;
     }
     return ticks;
 }
@@ -39,28 +39,24 @@ int read_process_stats(pid_t pid,pid_t tid, unsigned long *utime,
         return -1;
     }
     fclose(f);
-    
-    // Find the process name in parentheses
+
     char *open_paren = strchr(line, '(');
     char *close_paren = strrchr(line, ')');
     
     if (!open_paren || !close_paren) return -1;
     
-    // Extract name
     int name_len_actual = close_paren - open_paren - 1;
     if (name_len_actual > name_len - 1) name_len_actual = name_len - 1;
     strncpy(name, open_paren + 1, name_len_actual);
     name[name_len_actual] = '\0';
     
-    // Parse fields after the closing parenthesis
     char *p = close_paren + 2;
 
-    // Skip state field
     while (*p && *p != ' ')
         p++;
     p++;
 
-    int field = 3;  // because we already skipped fields 1 and 2
+    int field = 3;
 
     while (*p) {
         char *end;
@@ -107,9 +103,8 @@ int scan_processes(process_list_t *list) {
     struct dirent *entry;
     int scanned = 0;
     
-    // First, mark all existing processes as not seen
     for (int i = 0; i < list->count; i++) {
-        list->processes[i].last_seen = 0;  // Will be updated if seen
+        list->processes[i].last_seen = 0;
     }
 
     while ((entry = readdir(proc_dir)) != NULL) {
@@ -117,7 +112,6 @@ int scan_processes(process_list_t *list) {
 
         pid_t pid = atoi(entry->d_name);
 
-        // Open task directory
         char task_path[256];
         snprintf(task_path, sizeof(task_path), "/proc/%d/task", pid);
 
@@ -139,12 +133,10 @@ int scan_processes(process_list_t *list) {
                 process_t *proc = find_process(list, tid);
 
                 if (proc) {
-                    // Existing thread
                     proc->last_utime = utime;
                     proc->last_stime = stime;
                     proc->last_seen = time(NULL);
                 } else {
-                    // New thread
                     add_process(list, tid, name);
                     proc = find_process(list, tid);
 
@@ -165,8 +157,7 @@ int scan_processes(process_list_t *list) {
         closedir(task_dir);
 
     }
-    
-    // Remove processes that weren't seen in this scan
+
     for (int i = list->count - 1; i >= 0; i--) {
         if (list->processes[i].last_seen == 0) {
             remove_process(list, i);
@@ -186,7 +177,6 @@ void update_cpu_usage(process_list_t *list) {
     long hz = get_clock_ticks();
     
     if (first_run) {
-        // First run: just store current values
         prev_count = list->count;
         prev_utime = malloc(prev_count * sizeof(unsigned long));
         prev_stime = malloc(prev_count * sizeof(unsigned long));
@@ -201,30 +191,26 @@ void update_cpu_usage(process_list_t *list) {
         return;
     }
     
-    // Second and subsequent runs: calculate CPU usage
     for (int i = 0; i < list->count; i++) {
         process_t *p = &list->processes[i];
         
-        // Find matching previous entry by PID
         for (int j = 0; j < prev_count; j++) {
             if (p->pid == prev_pids[j]) {
                 unsigned long utime_diff = p->last_utime - prev_utime[j];
                 unsigned long stime_diff = p->last_stime - prev_stime[j];
                 unsigned long total_jiffies = utime_diff + stime_diff;
                 
-                // CPU% over 1 second interval
                 p->cpu_usage = (total_jiffies * 100.0) / hz;
-                if (p->cpu_usage > 100.0) p->cpu_usage = 100.0;
+                if (p->cpu_usage > 200.0) p->cpu_usage = 200.0;
                 
                 // Update history
-                p->history[p->history_index % HISTORY_SIZE] = p->cpu_usage;
-                p->history_index++;
+                // p->history[p->history_index % HISTORY_SIZE] = p->cpu_usage;
+                // p->history_index++;
                 break;
             }
         }
     }
     
-    // Update previous values for next iteration
     free(prev_utime);
     free(prev_stime);
     free(prev_pids);

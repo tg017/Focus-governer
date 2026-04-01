@@ -17,24 +17,22 @@ typedef enum {
 
 typedef struct {
     pid_t pid;
-    pid_t tgid;   // Thread Group ID (i.e., actual process ID)
+    pid_t tgid;
     char name[MAX_NAME_LEN];
     unsigned long window_id;
     
-    // CPU tracking
     float cpu_usage;
     unsigned long last_utime;
     unsigned long last_stime;
     float history[HISTORY_SIZE];
     int history_index;
     
-    // Process state
-    int foreground;        // 1 if foreground, 0 if background
+    int foreground;
     process_state_t state;
     int violations;
-    float baseline_cpu;     // CPU before throttling
-    int was_throttled;      // flag to track transition
-    // Timestamps
+    float baseline_cpu;
+    int was_throttled;
+
     time_t first_seen;
     time_t last_seen;
     
@@ -46,11 +44,11 @@ typedef struct {
     int capacity;
     float energy_saved;
     float total_cpu;
+    float avg_cpu;
 
     int system_stress;
 } process_list_t;
 
-// Function declarations
 process_list_t* init_process_list();
 void free_process_list(process_list_t *list);
 void add_process(process_list_t *list, pid_t pid, const char *name);

@@ -13,12 +13,10 @@
 
 #define CPU_THRESHOLD 30.0
 
-// Skip kernel threads (pid < 100) and essential system processes
 int is_safe_to_throttle(pid_t pid) {
-    if (pid < 100) return 0;  // kernel threads
+    if (pid < 100) return 0;
     if (pid == GOVERNOR_PID) return 0;
 
-    // Optionally read /proc/[pid]/cmdline to filter known system daemons
     char path[256];
     snprintf(path, sizeof(path), "/proc/%d/cmdline", pid);
     FILE *f = fopen(path, "r");
@@ -27,9 +25,7 @@ int is_safe_to_throttle(pid_t pid) {
         size_t len = fread(cmdline, 1, sizeof(cmdline)-1, f);
         fclose(f);
         cmdline[len] = '\0';
-        // If cmdline is empty, it's likely a kernel thread
         if (len == 0) return 0;
-        // Add more checks for systemd, init, etc. if desired
     }
     return 1;
 }
@@ -42,7 +38,6 @@ void boost_foreground(process_t *proc) {
     }
 }
 
-// Level 1: set nice value to 19
 void enforce_nice(process_t *proc) {
     if (!is_safe_to_throttle(proc->pid)) return;
     errno = 0;
@@ -56,7 +51,7 @@ void enforce_nice(process_t *proc) {
     }
 }
 
-// Placeholder for other functions (to be filled later)
+
 void enforce_cgroup(process_t *proc) {
     if (!is_safe_to_throttle(proc->pid)) return;
 
@@ -91,7 +86,7 @@ void enforce_cgroup(process_t *proc) {
 
 void enforce_freeze(process_t *proc) {
     if (!is_safe_to_throttle(proc->pid)) return;
-    if (proc->state != STATE_FROZEN) return; // already frozen?
+    if (proc->state != STATE_FROZEN) return;
 
     if (kill(proc->pid, SIGSTOP) == 0) {
         log_action("FREEZE", proc->pid, proc->name);
@@ -127,14 +122,12 @@ void cleanup_cgroup(process_t *proc) {
     struct stat st;
     if (stat(path, &st) == -1) return;  // cgroup doesn't exist → nothing to do
 
-    // 🔹 Move process back to root cgroup
     FILE *f = fopen("/sys/fs/cgroup/cgroup.procs", "w");
     if (f) {
         fprintf(f, "%d", proc->tgid);
         fclose(f);
     }
 
-    // 🔹 Remove cgroup directory
     if (rmdir(path) == 0) {
         log_action("CGROUP_CLEANUP", proc->pid, proc->name);
     } else if (errno != ENOENT) {
@@ -148,7 +141,6 @@ void apply_enforcement(process_list_t *list) {
     process_t *fg_proc = NULL;
     float saved_this_second = 0.0;
 
-    // Find foreground main thread
     for (int i = 0; i < list->count; i++) {
         process_t *p = &list->processes[i];
 
@@ -161,16 +153,11 @@ void apply_enforcement(process_list_t *list) {
     for (int i = 0; i < list->count; i++) {
         process_t *p = &list->processes[i];
 
-
-        // BOOST ONLY WHEN SYSTEM IS UNDER STRESS
         if (fg_proc && list->system_stress) {
             boost_foreground(fg_proc);
         }
 
-
-        // Only enforce on one thread per process to avoid duplicates
-        // We'll enforce on the thread that is also the tgid (main thread)
-        if (p->pid != p->tgid) continue;   // only main thread does enforcement
+        if (p->pid != p->tgid) continue;
         if (p->tgid == GOVERNOR_PID) continue;
 
         if (p->was_throttled && p->baseline_cpu > 0) {
@@ -180,11 +167,10 @@ void apply_enforcement(process_list_t *list) {
             float saved = p->baseline_cpu - current;
 
             if (saved > 0) {
-                saved_this_second += saved / 100.0;  // convert % → CPU-seconds
+                saved_this_second += saved / 100.0; 
             }
         }
 
-        // unsigned long active_win = get_active_window();
         if (p->state == STATE_FROZEN) {
             if(p->foreground) enforce_wake(p);
             continue;
@@ -212,11 +198,6 @@ void apply_enforcement(process_list_t *list) {
                 break;
         }
 
-        // If process is foreground and frozen, wake it
-        // if (p->foreground && p->state == STATE_FROZEN) {
-        //     // printf("%d, tried to wake _______________________________________\n", p->pid);
-        //     enforce_wake(p);
-        // }
     }
     list->energy_saved += saved_this_second;
 }
