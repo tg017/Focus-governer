@@ -33,6 +33,9 @@ typedef struct {
     float baseline_cpu;
     int was_throttled;
 
+    time_t frozen_since;
+    int recovery_flag;
+
     time_t first_seen;
     time_t last_seen;
     

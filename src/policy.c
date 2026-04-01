@@ -9,9 +9,7 @@
 #define CPU_THRESHOLD 30.0
 #define ALPHA 0.3 
 
-#define VIOLATION_L1 2
-#define VIOLATION_L2 4
-#define VIOLATION_L3 6
+
 
 #define SYSTEM_CPU_THRESHOLD 80.0
 #define FG_CPU_MIN 20.0
@@ -114,6 +112,8 @@ void apply_policy(process_list_t *list) {
 
         if (rep->foreground && rep->state!=STATE_FROZEN) {
             rep->violations = 0;
+            rep->baseline_cpu = 0.0;
+            rep->was_throttled = 0;
 
             for (int k = 0; k < list->count; k++) {
                 if (list->processes[k].tgid == tgid) {
@@ -145,6 +145,9 @@ void apply_policy(process_list_t *list) {
 
 
         if (rep->violations >= VIOLATION_L3){
+            if (rep->state != STATE_FROZEN) {
+                rep->frozen_since = time(NULL);
+            }
             rep->state = STATE_FROZEN;
             enforce_freeze(rep);
         }

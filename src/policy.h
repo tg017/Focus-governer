@@ -1,5 +1,8 @@
 #ifndef POLICY_H
 #define POLICY_H
+#define VIOLATION_L1 2
+#define VIOLATION_L2 4
+#define VIOLATION_L3 6
 
 #include "process.h"
 

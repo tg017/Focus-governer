@@ -12,6 +12,7 @@
 #include <errno.h>
 
 #define CPU_THRESHOLD 30.0
+#define FREEZE_MIN_TIME 15
 
 int is_safe_to_throttle(pid_t pid) {
     if (pid < 100) return 0;
@@ -101,10 +102,11 @@ void enforce_wake(process_t *proc) {
     if (!is_safe_to_throttle(proc->pid)) return;
     if (kill(proc->pid, SIGCONT) == 0) {
         log_action("WAKE", proc->pid, proc->name);
-        // After waking, reset state to NORMAL (policy will re-evaluate)
+        // After waking, reset state to NORMAL
         proc->state = STATE_NORMAL;
         proc->was_throttled = 0;
         proc->baseline_cpu = 0.0;
+        proc->recovery_flag = 0;
         cleanup_cgroup(proc);
     } else if (errno != ESRCH) {
         char msg[256];
@@ -150,6 +152,9 @@ void apply_enforcement(process_list_t *list) {
         }
     }
 
+    int woke_one = 0;
+    time_t now = time(NULL);
+
     for (int i = 0; i < list->count; i++) {
         process_t *p = &list->processes[i];
 
@@ -160,7 +165,7 @@ void apply_enforcement(process_list_t *list) {
         if (p->pid != p->tgid) continue;
         if (p->tgid == GOVERNOR_PID) continue;
 
-        if (p->was_throttled && p->baseline_cpu > 0) {
+        if (p->state!=STATE_NORMAL && p->was_throttled && p->baseline_cpu > 0) {
 
             float current = p->cpu_usage;
 
@@ -171,8 +176,16 @@ void apply_enforcement(process_list_t *list) {
             }
         }
 
+        
+
         if (p->state == STATE_FROZEN) {
             if(p->foreground) enforce_wake(p);
+            if (!list->system_stress && !woke_one && (now - p->frozen_since) >= FREEZE_MIN_TIME) {
+
+                p->recovery_flag = 1;
+                enforce_wake(p);
+                woke_one = 1;
+            }
             continue;
         }
 
