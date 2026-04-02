@@ -19,13 +19,10 @@ typedef struct {
     pid_t pid;
     pid_t tgid;
     char name[MAX_NAME_LEN];
-    unsigned long window_id;
     
     float cpu_usage;
     unsigned long last_utime;
     unsigned long last_stime;
-    float history[HISTORY_SIZE];
-    int history_index;
     
     int foreground;
     process_state_t state;

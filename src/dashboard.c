@@ -118,10 +118,10 @@ void dashboard_update(process_list_t *list) {
 
     mvprintw(1, 2, "Energy saved: %.2f CPU-sec", list->energy_saved);
     mvprintw(2, 2, "System stress: %s", list->system_stress ? "YES" : "NO");
-    mvprintw(3, 2, "Average CPU Usage: %.2f | Instantaneous CPU Dash: %.2f", list->avg_cpu, tot_cpu);
+    mvprintw(3, 2, "Average CPU Usage: %.2f | Instantaneous CPU Usage: %.2f", list->avg_cpu, tot_cpu);
 
     mvprintw(4, 2, "%-8s %-45s %8s %8s %-12s",
-             "TGID", "NAME", "CPU%", "THREADS", "STATE");
+             "PID", "NAME", "CPU%", "THREADS", "STATE");
     mvprintw(5, 2, "-------------------------------------------------------------");
 
     int row = 6;

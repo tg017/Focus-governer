@@ -125,6 +125,8 @@ void apply_policy(process_list_t *list) {
 
         if (!list->system_stress && rep->state != STATE_FROZEN) {
             rep->violations = 0;
+            rep->baseline_cpu = 0.0;
+            rep->was_throttled = 0;
 
             for (int k = 0; k < list->count; k++) {
                 if (list->processes[k].tgid == tgid) {

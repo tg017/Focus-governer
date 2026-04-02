@@ -52,11 +52,6 @@ void add_process(process_list_t *list, pid_t pid, const char *name) {
     p->baseline_cpu = 0.0;
     p->was_throttled = 0;
     
-    for (int i = 0; i < HISTORY_SIZE; i++) {
-        p->history[i] = 0.0;
-    }
-    p->history_index = 0;
-    
     p->first_seen = time(NULL);
     p->last_seen = p->first_seen;
 }

@@ -151,6 +151,10 @@ void apply_enforcement(process_list_t *list) {
             break;
         }
     }
+    
+    if (fg_proc && list->system_stress) {
+        boost_foreground(fg_proc);
+    }
 
     int woke_one = 0;
     time_t now = time(NULL);
@@ -158,9 +162,6 @@ void apply_enforcement(process_list_t *list) {
     for (int i = 0; i < list->count; i++) {
         process_t *p = &list->processes[i];
 
-        if (fg_proc && list->system_stress) {
-            boost_foreground(fg_proc);
-        }
 
         if (p->pid != p->tgid) continue;
         if (p->tgid == GOVERNOR_PID) continue;
